@@ -1,10 +1,13 @@
-<html><head><title>Steady Tradingview Tickers</title><style>
+
+<html><head><base href="https://6charts.steady.ai/"><title>6Charts - Advanced Multi-Timeframe Analysis Platform</title>
+<style>
 body, html {
   margin: 0;
   padding: 0;
-  font-family: Arial, sans-serif;
+  font-family: 'Roboto', Arial, sans-serif;
   height: 100%;
   overflow: hidden;
+  background-color: #f8f9fa;
 }
 
 .main-container {
@@ -16,8 +19,8 @@ body, html {
 .ticker-container {
   width: 100%;
   overflow: hidden;
-  background-color: #f1f3f6;
-  border-bottom: 1px solid #ddd;
+  background-color: #1e222d;
+  border-bottom: 1px solid #2a2e39;
   position: relative;
 }
 
@@ -58,38 +61,150 @@ body, html {
   top: 5px;
   right: 10px;
   z-index: 1000;
-  padding: 5px;
+  padding: 5px 10px;
   font-size: 14px;
+  background-color: #2a2e39;
+  color: #d1d4dc;
+  border: 1px solid #4a4f58;
+  border-radius: 4px;
 }
 
 .chart-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, 1fr);
-  gap: 10px;
-  padding: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-auto-rows: minmax(250px, 1fr);
+  gap: 15px;
+  padding: 15px;
   flex-grow: 1;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .chart-container {
-  border: 1px solid #ddd;
-  border-radius: 5px;
+  border: 1px solid #2a2e39;
+  border-radius: 8px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  background-color: #1e222d;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.chart-container:hover {
+  transform: translateY(-5px);
 }
 
 .chart-header {
-  background-color: #f1f3f6;
-  padding: 5px;
+  background-color: #2a2e39;
+  padding: 10px;
   font-weight: bold;
   text-align: center;
-  font-size: 12px;
+  font-size: 14px;
+  color: #d1d4dc;
 }
 
 .chart {
   flex-grow: 1;
+  min-height: 200px;
+}
+
+@media (max-width: 768px) {
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  #symbol-selector {
+    font-size: 12px;
+    padding: 3px 8px;
+  }
+  
+  .chart-container {
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chart-container {
+    min-height: 250px;
+  }
+  
+  .chart-header {
+    font-size: 12px;
+    padding: 5px;
+  }
+}
+
+/* Custom scrollbar for Webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #2a2e39;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4a4f58;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5a6070;
+}
+
+body {
+  background-color: #121212;
+  color: #e0e0e0;
+}
+
+/* HTML Background Music Widget Styles */
+.music-widget {
+  position: fixed;
+  top: 50px;
+  right: 10px;
+  z-index: 1001;
+  background-color: rgba(42, 46, 57, 0.8);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.music-widget h3 {
+  margin: 0 0 10px 0;
+  color: #d1d4dc;
+  font-size: 14px;
+}
+
+.music-widget button {
+  background-color: #26a69a;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  margin: 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.music-widget button:hover {
+  background-color: #2bbbad;
+}
+
+.music-widget .volume-control {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.music-widget .volume-control input[type="range"] {
+  width: 100%;
+  margin-right: 10px;
+}
+
+.music-widget .volume-control span {
+  color: #d1d4dc;
+  font-size: 12px;
 }
 </style></head>
 <body>
@@ -130,10 +245,24 @@ body, html {
           {"description": "BHP","proName": "BHP"},
           {"description": "USTECH100CFD","proName": "WHSELFINVEST:USTECH100CFD"}
         ],
+        "colorTheme": "dark",
+        "isTransparent": false,
+        "showSymbolLogo": true,
         "locale": "en"
         }
         </script>
       </div>
+    </div>
+  </div>
+
+  <div class="music-widget">
+    <h3>Background Music</h3>
+    <button onclick="playPause()">Play/Pause</button>
+    <button onclick="stop()">Stop</button>
+    <button onclick="nextTrack()">Next</button>
+    <div class="volume-control">
+      <input type="range" id="volume" name="volume" min="0" max="1" step="0.1" value="0.5" onchange="setVolume()">
+      <span id="volume-value">50%</span>
     </div>
   </div>
 
@@ -187,10 +316,10 @@ function createTradingViewWidget(containerId, symbol, interval, timeframeName) {
     "symbol": symbol,
     "interval": interval,
     "timezone": "Etc/UTC",
-    "theme": "light",
+    "theme": "dark",
     "style": "1",
     "locale": "en",
-    "toolbar_bg": "#f1f3f6",
+    "toolbar_bg": "#2a2e39",
     "enable_publishing": false,
     "hide_top_toolbar": true,
     "hide_legend": false,
@@ -220,11 +349,11 @@ function createTradingViewWidget(containerId, symbol, interval, timeframeName) {
       "MASimple.plot.color": "#FF0000"
     },
     "overrides": {
-      "paneProperties.background": "#ffffff",
-      "paneProperties.vertGridProperties.color": "#e6e6e6",
-      "paneProperties.horzGridProperties.color": "#e6e6e6",
+      "paneProperties.background": "#1e222d",
+      "paneProperties.vertGridProperties.color": "#2a2e39",
+      "paneProperties.horzGridProperties.color": "#2a2e39",
       "symbolWatermarkProperties.transparency": 90,
-      "scalesProperties.textColor": "#333",
+      "scalesProperties.textColor": "#d1d4dc",
       "mainSeriesProperties.candleStyle.upColor": "#26a69a",
       "mainSeriesProperties.candleStyle.downColor": "#ef5350",
       "mainSeriesProperties.candleStyle.drawWick": true,
@@ -244,6 +373,18 @@ function updateCharts(symbol) {
   }
 }
 
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
 updateCharts(currentSymbol);
 
 document.getElementById('symbol-selector').addEventListener('change', function() {
@@ -251,9 +392,71 @@ document.getElementById('symbol-selector').addEventListener('change', function()
   updateCharts(currentSymbol);
 });
 
-// Adjust chart sizes on window resize
-window.addEventListener('resize', function() {
+// Debounced resize event handler
+const debouncedResize = debounce(function() {
   updateCharts(currentSymbol);
+}, 250);
+
+window.addEventListener('resize', debouncedResize);
+
+// Lazy loading of charts
+const observerOptions = {
+  root: null,
+  rootMargin: '0px',
+  threshold: 0.1
+};
+
+const observer = new IntersectionObserver((entries, observer) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const chartId = entry.target.querySelector('.chart').id;
+      const index = parseInt(chartId.replace('chart', '')) - 1;
+      createTradingViewWidget(chartId, currentSymbol, timeframes[index], timeframeNames[index]);
+      observer.unobserve(entry.target);
+    }
+  });
+}, observerOptions);
+
+document.querySelectorAll('.chart-container').forEach(container => {
+  observer.observe(container);
 });
+
+// HTML Background Music Widget functionality
+const audioElement = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
+let isPlaying = false;
+
+function playPause() {
+  if (isPlaying) {
+    audioElement.pause();
+  } else {
+    audioElement.play();
+  }
+  isPlaying = !isPlaying;
+}
+
+function stop() {
+  audioElement.pause();
+  audioElement.currentTime = 0;
+  isPlaying = false;
+}
+
+function nextTrack() {
+  // For demonstration, we'll just restart the current track
+  audioElement.currentTime = 0;
+  if (isPlaying) {
+    audioElement.play();
+  }
+}
+
+function setVolume() {
+  const volumeSlider = document.getElementById('volume');
+  const volumeValue = document.getElementById('volume-value');
+  audioElement.volume = volumeSlider.value;
+  volumeValue.textContent = `${Math.round(volumeSlider.value * 100)}%`;
+}
+
+// Initialize volume display
+setVolume();
 </script>
+
 </body></html>
