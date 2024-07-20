@@ -1,0 +1,259 @@
+<html><head><title>Steady Tradingview Tickers</title><style>
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  height: 100%;
+  overflow: hidden;
+}
+
+.main-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.ticker-container {
+  width: 100%;
+  overflow: hidden;
+  background-color: #f1f3f6;
+  border-bottom: 1px solid #ddd;
+  position: relative;
+}
+
+.ticker-canvas {
+  width: calc((200px * 15) + 2px);
+  animation: ticker-canvas 20s linear infinite;
+}
+
+.ticker-canvas:hover {
+  animation-play-state: paused;
+}
+
+@keyframes ticker-canvas {
+  0% {
+    transform: translate3d(0, 0, 0);
+    visibility: visible;
+  }
+  100% {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+
+.tradingview-widget-container {
+  position: relative;
+}
+
+.tradingview-widget-container iframe {
+  position: absolute;
+  top: 0;
+}
+
+.tradingview-widget-container iframe:nth-of-type(2) {
+  left: 100%;
+}
+
+#symbol-selector {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  z-index: 1000;
+  padding: 5px;
+  font-size: 14px;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 10px;
+  padding: 10px;
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.chart-container {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-header {
+  background-color: #f1f3f6;
+  padding: 5px;
+  font-weight: bold;
+  text-align: center;
+  font-size: 12px;
+}
+
+.chart {
+  flex-grow: 1;
+}
+</style></head>
+<body>
+<div class="main-container">
+  <div class="ticker-container">
+    <select id="symbol-selector">
+      <option value="BTCUSD">BTC/USD</option>
+      <option value="ETHUSD">ETH/USD</option>
+      <option value="EURUSD">EUR/USD</option>
+      <option value="AAPL">AAPL</option>
+      <option value="NVDA">NVDA</option>
+      <option value="TSLA">TSLA</option>
+      <option value="AMD">AMD</option>
+      <option value="MSOS">MSOS</option>
+      <option value="SQQQ">SQQQ</option>
+      <option value="QQQ">QQQ</option>
+      <option value="SPY">SPY</option>
+    </select>
+    <div class="ticker-canvas">
+      <div class="tradingview-widget-container">
+        <div class="tradingview-widget-container__widget"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-tickers.js">
+        {
+        "symbols": [
+          {"title": "S&P 500","proName": "INDEX:SPX"},
+          {"title": "Nasdaq 100","proName": "INDEX:IUXX"},
+          {"title": "EUR/USD","proName": "FX_IDC:EURUSD"},
+          {"title": "BTC/USD","proName": "BITFINEX:BTCUSD"},
+          {"title": "ETH/USD","proName": "BITFINEX:ETHUSD"},
+          {"description": "Apple","proName": "NASDAQ:AAPL"},
+          {"description": "Berkshire","proName": "NYSE:BRK.A"},
+          {"description": "Microsoft","proName": "NASDAQ:MSFT"},
+          {"description": "Google","proName": "NASDAQ:GOOG"},
+          {"description": "Tesla","proName": "NASDAQ:TSLA"},
+          {"description": "Amazon","proName": "NASDAQ:AMZN"},
+          {"description": "AUD/USD","proName": "OANDA:AUDUSD"},
+          {"description": "NVDA","proName": "NASDAQ:NVDA"},
+          {"description": "BHP","proName": "BHP"},
+          {"description": "USTECH100CFD","proName": "WHSELFINVEST:USTECH100CFD"}
+        ],
+        "locale": "en"
+        }
+        </script>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-grid">
+    <div class="chart-container">
+      <div class="chart-header"></div>
+      <div id="chart1" class="chart"></div>
+    </div>
+    <div class="chart-container">
+      <div class="chart-header"></div>
+      <div id="chart2" class="chart"></div>
+    </div>
+    <div class="chart-container">
+      <div class="chart-header"></div>
+      <div id="chart3" class="chart"></div>
+    </div>
+    <div class="chart-container">
+      <div class="chart-header"></div>
+      <div id="chart4" class="chart"></div>
+    </div>
+    <div class="chart-container">
+      <div class="chart-header"></div>
+      <div id="chart5" class="chart"></div>
+    </div>
+    <div class="chart-container">
+      <div class="chart-header"></div>
+      <div id="chart6" class="chart"></div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+<script type="text/javascript">
+let currentSymbol = "WHSELFINVEST:USTECH100CFD";
+const timeframes = ["1", "15", "60", "240", "D", "W"];
+const timeframeNames = ["1 Minute", "15 Minutes", "1 Hour", "4 Hours", "1 Day", "1 Week"];
+
+function createTradingViewWidget(containerId, symbol, interval, timeframeName) {
+  const intervalToLength = {
+    '1': 1440,
+    '15': 96,
+    '60': 24,
+    'default': 50
+  };
+
+  const length = intervalToLength[interval] || intervalToLength['default'];
+
+  new TradingView.widget({
+    "width": "100%",
+    "height": "100%",
+    "symbol": symbol,
+    "interval": interval,
+    "timezone": "Etc/UTC",
+    "theme": "light",
+    "style": "1",
+    "locale": "en",
+    "toolbar_bg": "#f1f3f6",
+    "enable_publishing": false,
+    "hide_top_toolbar": true,
+    "hide_legend": false,
+    "save_image": false,
+    "container_id": containerId,
+    "studies": [
+      {
+        "id": "DONCH@tv-basicstudies",
+        "inputs": {
+          "length": length,
+           "source": "close"
+        }
+      },
+      {
+        "id": "MASimple@tv-basicstudies",
+        "inputs": {
+          "length": length,
+          "source": "close"
+        },
+        "linkedTo": "DONCH@tv-basicstudies"
+      }
+    ],
+    "studies_overrides": {
+      "volume.volume ma.color": "#FF6D00",
+      "volume.volume ma.linewidth": 2,
+      "OBV.plot.color": "#FFD700",
+      "MASimple.plot.color": "#FF0000"
+    },
+    "overrides": {
+      "paneProperties.background": "#ffffff",
+      "paneProperties.vertGridProperties.color": "#e6e6e6",
+      "paneProperties.horzGridProperties.color": "#e6e6e6",
+      "symbolWatermarkProperties.transparency": 90,
+      "scalesProperties.textColor": "#333",
+      "mainSeriesProperties.candleStyle.upColor": "#26a69a",
+      "mainSeriesProperties.candleStyle.downColor": "#ef5350",
+      "mainSeriesProperties.candleStyle.drawWick": true,
+      "mainSeriesProperties.candleStyle.drawBorder": true,
+      "mainSeriesProperties.candleStyle.borderUpColor": "#26a69a",
+      "mainSeriesProperties.candleStyle.borderDownColor": "#ef5350",
+      "mainSeriesProperties.candleStyle.wickUpColor": "#26a69a",
+      "mainSeriesProperties.candleStyle.wickDownColor": "#ef5350"
+    }
+  });
+  document.querySelector(`#${containerId}`).closest('.chart-container').querySelector('.chart-header').textContent = `${symbol} - ${timeframeName}`;
+}
+
+function updateCharts(symbol) {
+  for (let i = 0; i < 6; i++) {
+    createTradingViewWidget(`chart${i+1}`, symbol, timeframes[i], timeframeNames[i]);
+  }
+}
+
+updateCharts(currentSymbol);
+
+document.getElementById('symbol-selector').addEventListener('change', function() {
+  currentSymbol = this.value;
+  updateCharts(currentSymbol);
+});
+
+// Adjust chart sizes on window resize
+window.addEventListener('resize', function() {
+  updateCharts(currentSymbol);
+});
+</script>
+</body></html>
