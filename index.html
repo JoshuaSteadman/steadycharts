@@ -1,13 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CanaryTrader — Charts MTF Trading Desk</title>
 
-<html><head><base href="https://6charts.steady.ai/"><title>6Charts - Advanced Multi-Timeframe Analysis Platform</title>
+<!-- Webamp + Butterchurn -->
+<script src="https://unpkg.com/webamp@1.5.0/built/webamp.bundle.min.js"></script>
+<script src="https://unpkg.com/butterchurn@2.6.7/lib/butterchurn.min.js"></script>
+<script src="https://unpkg.com/butterchurn-presets@2.4.7/lib/butterchurnPresets.min.js"></script>
+
 <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
 body, html {
-  margin: 0;
-  padding: 0;
   font-family: 'Roboto', Arial, sans-serif;
   height: 100%;
   overflow: hidden;
-  background-color: #f8f9fa;
+  background: #121212;
+  color: #e0e0e0;
 }
 
 .main-container {
@@ -16,447 +27,799 @@ body, html {
   height: 100vh;
 }
 
-.ticker-container {
-  width: 100%;
-  overflow: hidden;
-  background-color: #1e222d;
+/* ── Header ── */
+.header {
+  background: #1e222d;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   border-bottom: 1px solid #2a2e39;
-  position: relative;
+  z-index: 100;
+  flex-shrink: 0;
 }
-
-.ticker-canvas {
-  width: calc((200px * 15) + 2px);
-  animation: ticker-canvas 20s linear infinite;
+.header h1 {
+  font-size: 1.05rem;
+  background: linear-gradient(90deg, #00d4aa, #6a6aff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  white-space: nowrap;
 }
-
-.ticker-canvas:hover {
-  animation-play-state: paused;
+.header-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  flex: 1;
 }
-
-@keyframes ticker-canvas {
-  0% {
-    transform: translate3d(0, 0, 0);
-    visibility: visible;
-  }
-  100% {
-    transform: translate3d(-100%, 0, 0);
-  }
-}
-
-.tradingview-widget-container {
-  position: relative;
-}
-
-.tradingview-widget-container iframe {
-  position: absolute;
-  top: 0;
-}
-
-.tradingview-widget-container iframe:nth-of-type(2) {
-  left: 100%;
-}
-
-#symbol-selector {
-  position: absolute;
-  top: 5px;
-  right: 10px;
-  z-index: 1000;
-  padding: 5px 10px;
-  font-size: 14px;
-  background-color: #2a2e39;
+select {
+  padding: 5px 8px;
+  font-size: 13px;
+  background: #2a2e39;
   color: #d1d4dc;
   border: 1px solid #4a4f58;
   border-radius: 4px;
+  outline: none;
+}
+select:focus { border-color: #00d4aa; }
+
+.indicator-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
+.btn {
+  padding: 4px 10px;
+  background: #2a2e39;
+  color: #d1d4dc;
+  border: 1px solid #4a4f58;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+.btn:hover { background: #3a3e4d; border-color: #00d4aa; }
+.btn.active { background: #00d4aa22; border-color: #00d4aa; color: #00d4aa; }
+
+.telegram-link {
+  background: #0088cc;
+  color: white;
+  padding: 5px 12px;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.telegram-link:hover { background: #0077b5; }
+
+/* ── Ticker Tape ── */
+.ticker-container {
+  width: 100%;
+  overflow: hidden;
+  background: #1e222d;
+  border-bottom: 1px solid #2a2e39;
+  flex-shrink: 0;
+  height: 64px;
+  position: relative;
+  z-index: 10000;
+}
+.ticker-canvas {
+  width: calc((200px * 15) + 2px);
+  animation: ticker-scroll 25s linear infinite;
+}
+.ticker-canvas:hover { animation-play-state: paused; }
+@keyframes ticker-scroll {
+  0%   { transform: translate3d(0,0,0); visibility: visible; }
+  100% { transform: translate3d(-50%,0,0); }
+}
+
+/* ── Main Content ── */
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Chart Grid ── */
 .chart-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   grid-auto-rows: minmax(250px, 1fr);
-  gap: 15px;
-  padding: 15px;
-  flex-grow: 1;
-  overflow: auto;
+  gap: 10px;
+  padding: 10px;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .chart-container {
+  background: #1e222d;
   border: 1px solid #2a2e39;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background-color: #1e222d;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
+  transition: border-color 0.2s, transform 0.2s;
 }
-
 .chart-container:hover {
-  transform: translateY(-5px);
+  border-color: #00d4aa55;
+  transform: translateY(-2px);
 }
-
 .chart-header {
-  background-color: #2a2e39;
-  padding: 10px;
-  font-weight: bold;
-  text-align: center;
-  font-size: 14px;
-  color: #d1d4dc;
-}
-
-.chart {
-  flex-grow: 1;
-  min-height: 200px;
-}
-
-@media (max-width: 768px) {
-  .chart-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  #symbol-selector {
-    font-size: 12px;
-    padding: 3px 8px;
-  }
-  
-  .chart-container {
-    min-height: 300px;
-  }
-}
-
-@media (max-width: 480px) {
-  .chart-container {
-    min-height: 250px;
-  }
-  
-  .chart-header {
-    font-size: 12px;
-    padding: 5px;
-  }
-}
-
-/* Custom scrollbar for Webkit browsers */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
   background: #2a2e39;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #4a4f58;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #5a6070;
-}
-
-body {
-  background-color: #121212;
-  color: #e0e0e0;
-}
-
-/* HTML Background Music Widget Styles */
-.music-widget {
-  position: fixed;
-  top: 50px;
-  right: 10px;
-  z-index: 1001;
-  background-color: rgba(42, 46, 57, 0.8);
-  border-radius: 8px;
-  padding: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-}
-
-.music-widget h3 {
-  margin: 0 0 10px 0;
-  color: #d1d4dc;
-  font-size: 14px;
-}
-
-.music-widget button {
-  background-color: #26a69a;
-  color: #fff;
-  border: none;
-  padding: 5px 10px;
-  margin: 2px;
-  border-radius: 4px;
-  cursor: pointer;
+  padding: 6px 10px;
   font-size: 12px;
+  font-weight: bold;
+  color: #d1d4dc;
+  letter-spacing: 0.3px;
+}
+.chart-body { flex: 1; min-height: 200px; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 280px;
+  background: #1e222d;
+  border-left: 1px solid #2a2e39;
+  padding: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.widget {
+  background: #2a2e39;
+  border-radius: 5px;
+  padding: 10px;
+}
+.widget h3 {
+  font-size: 11px;
+  color: #00d4aa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.timeframe-buttons, .chart-options-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.relevant-data {
+  font-size: 11px;
+  margin-bottom: 4px;
+  color: #aaa;
+}
+.relevant-data strong { color: #00d4aa; }
+
+/* ── Webamp renders into #webamp-app — bottom-left ── */
+#webamp-app {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
 }
 
-.music-widget button:hover {
-  background-color: #2bbbad;
+/* ── IA Search Panel — bottom-right ── */
+#ia-panel {
+  position: fixed;
+  bottom: 0;
+  right: 16px;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
 }
 
-.music-widget .volume-control {
+#ia-search-box {
+  background: rgba(20, 22, 34, 0.97);
+  border: 1px solid #2a2d3a;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  padding: 10px 12px;
+  width: 320px;
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+}
+#ia-search-box.open { display: flex; }
+#ia-search-box h3 {
+  font-size: 0.7rem;
+  color: #00d4aa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+#ia-search-row { display: flex; gap: 6px; }
+#ia-query {
+  flex: 1;
+  background: #0d0f14;
+  border: 1px solid #2a2d3a;
+  color: #e0e0e0;
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  outline: none;
+}
+#ia-query:focus { border-color: #00d4aa; }
+#ia-search-btn {
+  background: #00d4aa;
+  color: #0d0f14;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+#ia-search-btn:hover { background: #00bfa0; }
+#ia-tips { font-size: 0.65rem; color: #444; }
+#ia-tips span { color: #00d4aa; cursor: pointer; }
+#ia-tips span:hover { text-decoration: underline; }
+#ia-results-list {
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+#ia-results-list::-webkit-scrollbar { width: 4px; }
+#ia-results-list::-webkit-scrollbar-track { background: #0d0f14; }
+#ia-results-list::-webkit-scrollbar-thumb { background: #2a2d3a; border-radius: 2px; }
+.ia-track {
   display: flex;
   align-items: center;
-  margin-top: 10px;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  transition: background 0.15s;
 }
+.ia-track:hover { background: #232636; }
+.ia-track-info { flex: 1; overflow: hidden; }
+.ia-track-title { font-size: 0.75rem; color: #e0e0e0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ia-track-meta  { font-size: 0.65rem; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ia-add-btn {
+  background: none;
+  border: 1px solid #2a2d3a;
+  color: #00d4aa;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ia-add-btn:hover { background: #00d4aa22; }
+.ia-add-btn.play { background: #00d4aa; color: #0d0f14; }
+.ia-no-results { font-size: 0.75rem; color: #555; text-align: center; padding: 12px 0; }
 
-.music-widget .volume-control input[type="range"] {
-  width: 100%;
-  margin-right: 10px;
+#ia-toggle {
+  background: rgba(20, 22, 34, 0.97);
+  border: 1px solid #2a2d3a;
+  border-radius: 8px 8px 0 0;
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  color: #00d4aa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+  backdrop-filter: blur(8px);
 }
+#ia-toggle:hover { background: rgba(28, 30, 48, 0.97); }
 
-.music-widget .volume-control span {
-  color: #d1d4dc;
-  font-size: 12px;
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #1e222d; }
+::-webkit-scrollbar-thumb { background: #3a3e4d; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #00d4aa55; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .sidebar { width: 100%; border-left: none; border-top: 1px solid #2a2e39; height: 200px; }
+  .main-content { flex-direction: column; }
 }
-</style></head>
+</style>
+</head>
 <body>
+
 <div class="main-container">
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <h1> CanaryTrader — MTF Charts</h1>
+    <div class="header-controls">
+      <select id="symbol-selector">
+        <option value="WHSELFINVEST:USTECH100CFD" selected>NAS100</option>
+        <option value="SPX500">SPX500</option>
+        <option value="DJI">DOW 30</option>
+        <option value="QQQ">QQQ</option>
+        <option value="SPY">SPY</option>
+        <option value="BITFINEX:BTCUSD">BTC/USD</option>
+        <option value="BITFINEX:ETHUSD">ETH/USD</option>
+        <option value="FX_IDC:EURUSD">EUR/USD</option>
+        <option value="NASDAQ:AAPL">AAPL</option>
+        <option value="NASDAQ:NVDA">NVDA</option>
+        <option value="NASDAQ:TSLA">TSLA</option>
+        <option value="NASDAQ:AMD">AMD</option>
+        <option value="OANDA:XAUUSD">XAU/USD</option>
+        <option value="COHR">COHR</option>
+      </select>
+      <select id="chart-count-selector">
+        <option value="1">1 Chart</option>
+        <option value="2">2 Charts</option>
+        <option value="3">3 Charts</option>
+        <option value="4"selected>4 Charts</option>
+        <option value="5">5 Charts</option>
+        <option value="6">6 Charts</option>
+        <option value="8">8 Charts</option>
+        <option value="10">10 Charts</option>
+        <option value="12">12 Charts</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- ── Ticker Tape (6Charts style) ── -->
   <div class="ticker-container">
-    <select id="symbol-selector">
-      <option value="BTCUSD">BTC/USD</option>
-      <option value="ETHUSD">ETH/USD</option>
-      <option value="EURUSD">EUR/USD</option>
-      <option value="AAPL">AAPL</option>
-      <option value="NVDA">NVDA</option>
-      <option value="TSLA">TSLA</option>
-      <option value="AMD">AMD</option>
-      <option value="MSOS">MSOS</option>
-      <option value="SQQQ">SQQQ</option>
-      <option value="QQQ">QQQ</option>
-      <option value="SPY">SPY</option>
-    </select>
     <div class="ticker-canvas">
       <div class="tradingview-widget-container">
         <div class="tradingview-widget-container__widget"></div>
         <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-tickers.js">
         {
-        "symbols": [
-          {"title": "S&P 500","proName": "INDEX:SPX"},
-          {"title": "Nasdaq 100","proName": "INDEX:IUXX"},
-          {"title": "EUR/USD","proName": "FX_IDC:EURUSD"},
-          {"title": "BTC/USD","proName": "BITFINEX:BTCUSD"},
-          {"title": "ETH/USD","proName": "BITFINEX:ETHUSD"},
-          {"description": "Apple","proName": "NASDAQ:AAPL"},
-          {"description": "Berkshire","proName": "NYSE:BRK.A"},
-          {"description": "Microsoft","proName": "NASDAQ:MSFT"},
-          {"description": "Google","proName": "NASDAQ:GOOG"},
-          {"description": "Tesla","proName": "NASDAQ:TSLA"},
-          {"description": "Amazon","proName": "NASDAQ:AMZN"},
-          {"description": "AUD/USD","proName": "OANDA:AUDUSD"},
-          {"description": "NVDA","proName": "NASDAQ:NVDA"},
-          {"description": "BHP","proName": "BHP"},
-          {"description": "USTECH100CFD","proName": "WHSELFINVEST:USTECH100CFD"}
-        ],
-        "colorTheme": "dark",
-        "isTransparent": false,
-        "showSymbolLogo": true,
-        "locale": "en"
+          "symbols": [
+            {"title": "NASDAQ",   "proName": "WHSELFINVEST:USTECH100CFD"},
+            {"title": "S&P 500",  "proName": "SPX500"},
+            {"title": "DOW 30",   "proName": "DJI"},
+            {"title": "QQQ",      "proName": "QQQ"},
+            {"title": "VIX",      "proName": "VIX"},
+            {"title": "BTC/USD",  "proName": "BITFINEX:BTCUSD"},
+            {"title": "ETH/USD",  "proName": "BITFINEX:ETHUSD"},
+            {"title": "EUR/USD",  "proName": "FX_IDC:EURUSD"},
+            {"title": "NVDA",     "proName": "NASDAQ:NVDA"},
+            {"title": "AAPL",     "proName": "NASDAQ:AAPL"},
+            {"title": "TSLA",     "proName": "NASDAQ:TSLA"},
+            {"title": "AMD",      "proName": "NASDAQ:AMD"},
+            {"title": "XAU/USD",  "proName": "OANDA:XAUUSD"},
+            {"title": "DXY",      "proName": "DXY"},
+            {"title": "AMZN",     "proName": "NASDAQ:AMZN"}
+          ],
+          "colorTheme": "dark",
+          "isTransparent": true,
+          "showSymbolLogo": true,
+          "locale": "en"
         }
         </script>
       </div>
     </div>
   </div>
 
-  <div class="music-widget">
-    <h3>Background Music</h3>
-    <button onclick="playPause()">Play/Pause</button>
-    <button onclick="stop()">Stop</button>
-    <button onclick="nextTrack()">Next</button>
-    <div class="volume-control">
-      <input type="range" id="volume" name="volume" min="0" max="1" step="0.1" value="0.5" onchange="setVolume()">
-      <span id="volume-value">50%</span>
+  <!-- ── Main Content ── -->
+  <div class="main-content">
+
+    <div class="chart-grid" id="chart-grid"></div>
+
+    <div class="sidebar">
+      <div class="widget">
+        <h3>⏱ Timeframes</h3>
+        <div class="timeframe-buttons">
+          <button class="btn active" data-timeframe="1">1m</button>
+          <button class="btn active" data-timeframe="5">5m</button>
+          <button class="btn active" data-timeframe="15">15m</button>
+          <button class="btn active" data-timeframe="30">30m</button>
+          <button class="btn active" data-timeframe="60">1H</button>
+          <button class="btn active" data-timeframe="240">4H</button>
+          <button class="btn active" data-timeframe="D">1D</button>
+          <button class="btn active" data-timeframe="W">1W</button>
+          <button class="btn" data-timeframe="M">1M</button>
+          <button class="btn" data-timeframe="3M">3M</button>
+        </div>
+      </div>
+
+      <div class="widget">
+        <h3>📊 Market Context</h3>
+        <div id="relevant-data">
+          <div class="relevant-data"><strong>NAS100:</strong> Loading…</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="chart-grid">
-    <div class="chart-container">
-      <div class="chart-header"></div>
-      <div id="chart1" class="chart"></div>
+</div><!-- /.main-container -->
+
+<!-- Webamp renders here — bottom-left -->
+<div id="webamp-app"></div>
+
+<!-- IA Search Panel — bottom-left, above Webamp -->
+<div id="ia-panel">
+  <div id="ia-search-box">
+    <h3>🎵 Internet Archive Search</h3>
+    <div id="ia-search-row">
+      <input type="text" id="ia-query" placeholder="Artist, album, or track…" />
+      <button id="ia-search-btn" onclick="iaSearch()">Search</button>
     </div>
-    <div class="chart-container">
-      <div class="chart-header"></div>
-      <div id="chart2" class="chart"></div>
+    <div id="ia-tips">
+      Try: <span onclick="setQuery('grateful dead live')">grateful dead live</span>
+      · <span onclick="setQuery('lofi hip hop')">lofi hip hop</span>
+      · <span onclick="setQuery('jazz piano')">jazz piano</span>
     </div>
-    <div class="chart-container">
-      <div class="chart-header"></div>
-      <div id="chart3" class="chart"></div>
+    <div id="ia-results-list">
+      <div class="ia-no-results">Search to find free music from the Internet Archive.</div>
     </div>
-    <div class="chart-container">
-      <div class="chart-header"></div>
-      <div id="chart4" class="chart"></div>
-    </div>
-    <div class="chart-container">
-      <div class="chart-header"></div>
-      <div id="chart5" class="chart"></div>
-    </div>
-    <div class="chart-container">
-      <div class="chart-header"></div>
-      <div id="chart6" class="chart"></div>
-    </div>
+  </div>
+  <div id="ia-toggle" onclick="toggleSearch()">
+    <span id="toggle-icon">🎵</span>
+    <span id="toggle-label">Search IA</span>
   </div>
 </div>
 
 <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-<script type="text/javascript">
-let currentSymbol = "WHSELFINVEST:USTECH100CFD";
-const timeframes = ["1", "15", "60", "240", "D", "W"];
-const timeframeNames = ["1 Minute", "15 Minutes", "1 Hour", "4 Hours", "1 Day", "1 Week"];
+<script>
+// ══════════════════════════════════════════════════
+//  CONFIGURATION & STATE
+// ══════════════════════════════════════════════════
+let currentSymbol = 'WHSELFINVEST:USTECH100CFD';
+const ALL_TIMEFRAMES      = ['1','5','15','30','60','240','D','W','M','3M'];
+const ALL_TIMEFRAME_NAMES = ['1 Minute','5 Minutes','15 Minutes','30 Minutes','1 Hour','4 Hours','1 Day','1 Week','1 Month','3 Months'];
+let visibleCharts    = 4;
+let selectedIndicators = ['RSI'];
+let activeTimeframes = new Set(['5','30','240','D']);
+let chartConfig = {
+  hide_side_toolbar: true,
+  hide_top_toolbar: false,
+  withdateranges: true,
+  allow_symbol_change: true,
+  details: true,
+  hotlist: true,
+  calendar: false,
+  autosize: true
+};
 
-function createTradingViewWidget(containerId, symbol, interval, timeframeName) {
-  const intervalToLength = {
-    '1': 1440,
-    '15': 96,
-    '60': 24,
-    'default': 50
+// Donchian channel settings (from 6charts reference, applied to all TFs)
+const DONCHIAN_STUDY = {
+  id: 'DONCH@tv-basicstudies',
+  inputs: { length: 58, source: 'close' }
+};
+const DONCHIAN_OVERRIDES = {
+  'DONCH@tv-basicstudies.Upper Band.color':  '#00d4aa',
+  'DONCH@tv-basicstudies.Upper Band.linewidth': 1,
+  'DONCH@tv-basicstudies.Lower Band.color':  '#6a6aff',
+  'DONCH@tv-basicstudies.Lower Band.linewidth': 1,
+  'DONCH@tv-basicstudies.Basis.color':        '#888888',
+  'DONCH@tv-basicstudies.Basis.linewidth':    1,
+};
+
+// ══════════════════════════════════════════════════
+//  TRADINGVIEW CHARTS
+// ══════════════════════════════════════════════════
+function indicatorStudyId(ind) {
+  const map = {
+    RSI: 'RSI@tv-basicstudies', MACD: 'MACD@tv-basicstudies',
+    BB: 'BB@tv-basicstudies', ATR: 'ATR@tv-basicstudies',
+    OBV: 'OBV@tv-basicstudies', VWAP: 'VWAP@tv-basicstudies',
+    CCI: 'CCI@tv-basicstudies'
   };
+  return map[ind] || ind + '@tv-basicstudies';
+}
 
-  const length = intervalToLength[interval] || intervalToLength['default'];
+function createChart(containerId, symbol, interval, tfName) {
+  const studies = [
+    DONCHIAN_STUDY,
+    ...selectedIndicators.map(ind => indicatorStudyId(ind))
+  ];
 
   new TradingView.widget({
-    "width": "100%",
-    "height": "100%",
-    "symbol": symbol,
-    "interval": interval,
-    "timezone": "Etc/UTC",
-    "theme": "dark",
-    "style": "1",
-    "locale": "en",
-    "toolbar_bg": "#2a2e39",
-    "enable_publishing": false,
-    "hide_top_toolbar": true,
-    "hide_legend": false,
-    "save_image": false,
-    "container_id": containerId,
-    "studies": [
-      {
-        "id": "DONCH@tv-basicstudies",
-        "inputs": {
-          "length": length,
-           "source": "close"
-        }
-      },
-      {
-        "id": "MASimple@tv-basicstudies",
-        "inputs": {
-          "length": length,
-          "source": "close"
-        },
-        "linkedTo": "DONCH@tv-basicstudies"
-      }
-    ],
-    "studies_overrides": {
-      "volume.volume ma.color": "#FF6D00",
-      "volume.volume ma.linewidth": 2,
-      "OBV.plot.color": "#FFD700",
-      "MASimple.plot.color": "#FF0000"
+    container_id: containerId,
+    width: '100%',
+    height: '100%',
+    symbol,
+    interval,
+    timezone: 'America/New_York',
+    theme: 'dark',
+    style: '1',
+    locale: 'en',
+    toolbar_bg: '#1e222d',
+    enable_publishing: false,
+    hide_legend: false,
+    save_image: false,
+    studies,
+    studies_overrides: {
+      ...DONCHIAN_OVERRIDES,
+      'rsi.rsi.color':       '#6a6aff',
+      'rsi.rsi.linewidth':   2,
+      'macd.macd.color':     '#00d4aa',
+      'macd.signal.color':   '#ff9800',
+      'volume.volume ma.color': '#ff6d00',
     },
-    "overrides": {
-      "paneProperties.background": "#1e222d",
-      "paneProperties.vertGridProperties.color": "#2a2e39",
-      "paneProperties.horzGridProperties.color": "#2a2e39",
-      "symbolWatermarkProperties.transparency": 90,
-      "scalesProperties.textColor": "#d1d4dc",
-      "mainSeriesProperties.candleStyle.upColor": "#26a69a",
-      "mainSeriesProperties.candleStyle.downColor": "#ef5350",
-      "mainSeriesProperties.candleStyle.drawWick": true,
-      "mainSeriesProperties.candleStyle.drawBorder": true,
-      "mainSeriesProperties.candleStyle.borderUpColor": "#26a69a",
-      "mainSeriesProperties.candleStyle.borderDownColor": "#ef5350",
-      "mainSeriesProperties.candleStyle.wickUpColor": "#26a69a",
-      "mainSeriesProperties.candleStyle.wickDownColor": "#ef5350"
-    }
+    overrides: {
+      'paneProperties.background':                      '#1e222d',
+      'paneProperties.vertGridProperties.color':        'rgba(255,255,255,0.03)',
+      'paneProperties.horzGridProperties.color':        'rgba(255,255,255,0.03)',
+      'symbolWatermarkProperties.transparency':         90,
+      'scalesProperties.textColor':                     '#d1d4dc',
+      'mainSeriesProperties.candleStyle.upColor':       '#26a69a',
+      'mainSeriesProperties.candleStyle.downColor':     '#ef5350',
+      'mainSeriesProperties.candleStyle.drawWick':      true,
+      'mainSeriesProperties.candleStyle.drawBorder':    true,
+      'mainSeriesProperties.candleStyle.borderUpColor': '#26a69a',
+      'mainSeriesProperties.candleStyle.borderDownColor': '#ef5350',
+      'mainSeriesProperties.candleStyle.wickUpColor':   '#26a69a',
+      'mainSeriesProperties.candleStyle.wickDownColor': '#ef5350',
+    },
+    ...chartConfig
   });
-  document.querySelector(`#${containerId}`).closest('.chart-container').querySelector('.chart-header').textContent = `${symbol} - ${timeframeName}`;
+
+  const container = document.getElementById(containerId)?.closest('.chart-container');
+  if (container) {
+    container.querySelector('.chart-header').textContent = `${symbol.split(':').pop()} · ${tfName}`;
+  }
 }
 
 function updateCharts(symbol) {
-  for (let i = 0; i < 6; i++) {
-    createTradingViewWidget(`chart${i+1}`, symbol, timeframes[i], timeframeNames[i]);
+  const grid = document.getElementById('chart-grid');
+  grid.innerHTML = '';
+  let idx = 0;
+  for (let i = 0; i < ALL_TIMEFRAMES.length && idx < visibleCharts; i++) {
+    if (!activeTimeframes.has(ALL_TIMEFRAMES[i])) continue;
+    const cid = `chart_${idx}`;
+    const div = document.createElement('div');
+    div.className = 'chart-container';
+    div.innerHTML = `<div class="chart-header"></div><div id="${cid}" class="chart-body"></div>`;
+    grid.appendChild(div);
+    createChart(cid, symbol, ALL_TIMEFRAMES[i], ALL_TIMEFRAME_NAMES[i]);
+    idx++;
+  }
+  updateMarketContext(symbol);
+}
+
+// ══════════════════════════════════════════════════
+//  MARKET CONTEXT
+// ══════════════════════════════════════════════════
+function updateMarketContext(symbol) {
+  const el = document.getElementById('relevant-data');
+  const map = {
+    'WHSELFINVEST:USTECH100CFD': `
+      <div class="relevant-data"><strong>Tracking:</strong> Nasdaq 100</div>
+      <div class="relevant-data"><strong>Components:</strong> 100 largest non-fin NASDAQ stocks</div>
+      <div class="relevant-data"><strong>Key names:</strong> AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA</div>
+      <div class="relevant-data"><strong>Session:</strong> 09:30–16:00 ET (extended 04:00–20:00)</div>
+      <div class="relevant-data"><strong>Correlated:</strong> QQQ, NQ futures, SQQQ/TQQQ</div>
+    `,
+    'INDEX:SPX': `
+      <div class="relevant-data"><strong>Tracking:</strong> S&P 500</div>
+      <div class="relevant-data"><strong>Components:</strong> 500 large-cap US equities</div>
+      <div class="relevant-data"><strong>Correlated:</strong> SPY, ES futures, VIX (inverse)</div>
+    `,
+    'BITFINEX:BTCUSD': `
+      <div class="relevant-data"><strong>Asset:</strong> Bitcoin</div>
+      <div class="relevant-data"><strong>24/7 market</strong> — no session hours</div>
+      <div class="relevant-data"><strong>Watch:</strong> Funding rate, open interest, BTC dominance</div>
+    `,
+  };
+  el.innerHTML = map[symbol] || `<div class="relevant-data"><strong>Symbol:</strong> ${symbol.split(':').pop()}</div>`;
+}
+
+// ══════════════════════════════════════════════════
+//  WEBAMP + INTERNET ARCHIVE MODULE (from webamp-ia.html)
+//  Bottom-left, Milkdrop fullscreen on load, JSONP search
+// ══════════════════════════════════════════════════
+let webamp = null;
+let webampPlaylist = [];
+let iaSearchResults = [];
+let searchOpen = false;
+
+function initWebamp() {
+  if (webamp) return;
+  webamp = new Webamp({
+    initialTracks: [{
+      metaData: { artist: 'Internet Archive', title: 'Search IA above to add tracks' },
+      url: 'https://cdn.jsdelivr.net/gh/captbaritone/webamp@43434d82cfe0e37286dbbe0666072dc3190a83bc/mp3/llama-2.91.mp3',
+    }],
+    __butterchurnOptions: {
+      importButterchurn: () => Promise.resolve(window.butterchurn),
+      getPresets: () => {
+        const presets = window.butterchurnPresets.getPresets();
+        return Object.keys(presets).map((name) => ({
+          name, butterchurnPresetObject: presets[name],
+        }));
+      },
+      butterchurnOpen: true,
+    },
+    __initialWindowLayout: {
+      main:      { position: { x: 16, y: 50 } },
+      equalizer: { position: { x: 16, y: 166 } },
+      playlist:  { position: { x: 16, y: 282 }, size: [0, 4] },
+      milkdrop:  { position: { x: 0,  y: 0  }, size: [0, 0] },
+    },
+  });
+
+  webamp.renderWhenReady(document.getElementById('webamp-app')).then(() => {
+    webamp.setMilkdropFullscreen(true);
+  });
+
+  webamp.onTrackDidChange(track => {
+    if (track?.metaData?.title) {
+      document.getElementById('toggle-label').textContent =
+        ('♪ ' + track.metaData.title).slice(0, 28);
+    }
+  });
+}
+
+// F key toggles Milkdrop fullscreen
+document.addEventListener('keydown', e => {
+  if ((e.key === 'f' || e.key === 'F') && webamp) {
+    webamp.toggleMilkdropFullscreen();
+  }
+});
+
+function toggleSearch() {
+  searchOpen = !searchOpen;
+  document.getElementById('ia-search-box').classList.toggle('open', searchOpen);
+  document.getElementById('toggle-icon').textContent = searchOpen ? '🔽' : '🎵';
+  if (searchOpen) setTimeout(() => document.getElementById('ia-query').focus(), 50);
+}
+
+document.getElementById('ia-query').addEventListener('keydown', e => {
+  if (e.key === 'Enter') iaSearch();
+});
+
+function setQuery(text) {
+  document.getElementById('ia-query').value = text;
+  iaSearch();
+}
+
+// JSONP — bypasses file:// CORS for IA search
+function jsonpFetch(url) {
+  return new Promise((resolve, reject) => {
+    const cb = 'ia_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+    const tid = setTimeout(() => { cleanup(); reject(new Error('Search timed out.')); }, 15000);
+    function cleanup() { clearTimeout(tid); delete window[cb]; if (script.parentNode) script.remove(); }
+    window[cb] = (data) => { cleanup(); resolve(data); };
+    const script = document.createElement('script');
+    script.src = url + '&callback=' + cb;
+    script.onerror = () => { cleanup(); reject(new Error('Search failed.')); };
+    document.head.appendChild(script);
+  });
+}
+
+async function iaSearch() {
+  const rawQuery = document.getElementById('ia-query').value.trim();
+  if (!rawQuery) return;
+  const listEl = document.getElementById('ia-results-list');
+  listEl.innerHTML = '<div class="ia-no-results">⏳ Searching…</div>';
+  iaSearchResults = [];
+
+  const q = `(${encodeURIComponent(rawQuery)})+AND+mediatype:audio+AND+(collection:etree+OR+collection:audio_music+OR+collection:jamendo)+-title:test`;
+  try {
+    const json = await jsonpFetch(
+      `https://archive.org/advancedsearch.php?q=${q}` +
+      `&fl[]=identifier,title,creator,year,downloads&sort=downloads+desc&rows=25&output=json`
+    );
+    const docs = json?.response?.docs ?? [];
+    if (!docs.length) { listEl.innerHTML = '<div class="ia-no-results">No results. Try a different search.</div>'; return; }
+
+    iaSearchResults = docs.slice(0, 20).map(d => ({
+      identifier: d.identifier,
+      title: d.title || d.identifier,
+      creator: Array.isArray(d.creator) ? d.creator[0] : (d.creator || ''),
+      year: d.year || '',
+      downloads: d.downloads || 0,
+    }));
+
+    listEl.innerHTML = iaSearchResults.map((t, i) => {
+      const badge = t.downloads > 1000
+        ? `<span style="color:#00d4aa;font-size:0.62rem">🔥${fmtK(t.downloads)}</span>` : '';
+      return `
+        <div class="ia-track" id="ia-row-${i}">
+          <div class="ia-track-info">
+            <div class="ia-track-title" title="${esc(t.title)}">${esc(t.title)}</div>
+            <div class="ia-track-meta">${esc(t.creator)}${t.year?' · '+t.year:''} ${badge}</div>
+          </div>
+          <button class="ia-add-btn" onclick="addTrack(${i},false)">+ Add</button>
+          <button class="ia-add-btn play" onclick="addTrack(${i},true)">▶ Play</button>
+        </div>`;
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = `<div class="ia-no-results">❌ ${e.message}</div>`;
   }
 }
 
-function debounce(func, wait) {
-  let timeout;
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
+function fmtK(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1)+'M';
+  if (n >= 1000) return (n/1000).toFixed(1)+'K';
+  return n;
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function resolveTrack(identifier) {
+  const res = await fetch(`https://archive.org/metadata/${identifier}`);
+  if (!res.ok) throw new Error('Metadata fetch failed');
+  const meta = await res.json();
+  const files = meta?.files ?? [];
+  const EXTS = ['.mp3','.ogg','.m4a','.flac','.wav','.opus'];
+  const audio =
+    files.find(f => f.name?.toLowerCase().endsWith('.mp3') && !f.name.includes('_vbr') && f.source !== 'metadata') ||
+    files.find(f => EXTS.some(ext => f.name?.toLowerCase().endsWith(ext)) && f.source !== 'metadata');
+  if (!audio) throw new Error('No playable audio in this item');
+  const creator = Array.isArray(meta?.metadata?.creator)
+    ? meta.metadata.creator[0]
+    : (meta?.metadata?.creator || meta?.metadata?.artist || identifier);
+  return {
+    url: `https://archive.org/download/${identifier}/${encodeURIComponent(audio.name)}`,
+    title: audio.title || audio.name.replace(/\.[^.]+$/, ''),
+    artist: creator,
   };
 }
 
-updateCharts(currentSymbol);
-
-document.getElementById('symbol-selector').addEventListener('change', function() {
-  currentSymbol = this.value;
-  updateCharts(currentSymbol);
-});
-
-// Debounced resize event handler
-const debouncedResize = debounce(function() {
-  updateCharts(currentSymbol);
-}, 250);
-
-window.addEventListener('resize', debouncedResize);
-
-// Lazy loading of charts
-const observerOptions = {
-  root: null,
-  rootMargin: '0px',
-  threshold: 0.1
-};
-
-const observer = new IntersectionObserver((entries, observer) => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      const chartId = entry.target.querySelector('.chart').id;
-      const index = parseInt(chartId.replace('chart', '')) - 1;
-      createTradingViewWidget(chartId, currentSymbol, timeframes[index], timeframeNames[index]);
-      observer.unobserve(entry.target);
+async function addTrack(idx, playNow) {
+  const track = iaSearchResults[idx];
+  if (!track) return;
+  const row = document.getElementById(`ia-row-${idx}`);
+  const btns = row?.querySelectorAll('.ia-add-btn');
+  if (btns) btns.forEach(b => { b.disabled = true; b.textContent = '…'; });
+  try {
+    const resolved = await resolveTrack(track.identifier);
+    const wt = { url: resolved.url, metaData: { title: resolved.title || track.title, artist: resolved.artist || track.creator } };
+    webampPlaylist.push(wt);
+    webamp.setTracksToPlay(playNow ? [wt, ...webampPlaylist.slice(0,-1)] : [...webampPlaylist]);
+    if (btns) {
+      btns[0].disabled = false; btns[0].textContent = '✓';
+      if (btns[1]) { btns[1].disabled = false; btns[1].textContent = '▶ Play'; }
     }
+  } catch(e) {
+    console.error(e);
+    if (btns) {
+      btns[0].disabled = false; btns[0].textContent = '+ Add';
+      if (btns[1]) { btns[1].disabled = false; btns[1].textContent = '✗'; }
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  INIT — all DOM listeners here, after parse
+// ══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+
+  document.getElementById('symbol-selector').addEventListener('change', function() {
+    currentSymbol = this.value;
+    updateCharts(currentSymbol);
   });
-}, observerOptions);
 
-document.querySelectorAll('.chart-container').forEach(container => {
-  observer.observe(container);
+  document.getElementById('chart-count-selector').addEventListener('change', function() {
+    visibleCharts = parseInt(this.value);
+    updateCharts(currentSymbol);
+  });
+
+  document.querySelectorAll('.indicator-buttons .btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      this.classList.toggle('active');
+      const ind = this.dataset.indicator;
+      if (this.classList.contains('active')) {
+        if (!selectedIndicators.includes(ind)) selectedIndicators.push(ind);
+      } else {
+        selectedIndicators = selectedIndicators.filter(i => i !== ind);
+      }
+      updateCharts(currentSymbol);
+    });
+  });
+
+  document.querySelectorAll('.timeframe-buttons .btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      this.classList.toggle('active');
+      const tf = this.dataset.timeframe;
+      this.classList.contains('active') ? activeTimeframes.add(tf) : activeTimeframes.delete(tf);
+      updateCharts(currentSymbol);
+    });
+  });
+
+  updateCharts(currentSymbol);
+  initWebamp();
 });
-
-// HTML Background Music Widget functionality
-const audioElement = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3');
-let isPlaying = false;
-
-function playPause() {
-  if (isPlaying) {
-    audioElement.pause();
-  } else {
-    audioElement.play();
-  }
-  isPlaying = !isPlaying;
-}
-
-function stop() {
-  audioElement.pause();
-  audioElement.currentTime = 0;
-  isPlaying = false;
-}
-
-function nextTrack() {
-  // For demonstration, we'll just restart the current track
-  audioElement.currentTime = 0;
-  if (isPlaying) {
-    audioElement.play();
-  }
-}
-
-function setVolume() {
-  const volumeSlider = document.getElementById('volume');
-  const volumeValue = document.getElementById('volume-value');
-  audioElement.volume = volumeSlider.value;
-  volumeValue.textContent = `${Math.round(volumeSlider.value * 100)}%`;
-}
-
-// Initialize volume display
-setVolume();
 </script>
-
-</body></html>
+</body>
+</html>
