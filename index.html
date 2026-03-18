@@ -193,12 +193,18 @@ select:focus { border-color: #00d4aa; }
 }
 .relevant-data strong { color: #00d4aa; }
 
-/* ── Webamp renders into #webamp-app — bottom-left ── */
+/* ── Webamp renders into #webamp-app — full viewport overlay ── */
 #webamp-app {
   position: fixed;
-  bottom: 0;
+  top: 0;
   left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
   z-index: 1000;
+}
+#webamp-app > * {
+  pointer-events: auto;
 }
 
 /* ── IA Search Panel — bottom-right ── */
@@ -406,14 +412,14 @@ select:focus { border-color: #00d4aa; }
       <div class="widget">
         <h3>⏱ Timeframes</h3>
         <div class="timeframe-buttons">
-          <button class="btn active" data-timeframe="1">1m</button>
+          <button class="btn" data-timeframe="1">1m</button>
           <button class="btn active" data-timeframe="5">5m</button>
-          <button class="btn active" data-timeframe="15">15m</button>
+          <button class="btn" data-timeframe="15">15m</button>
           <button class="btn active" data-timeframe="30">30m</button>
-          <button class="btn active" data-timeframe="60">1H</button>
+          <button class="btn" data-timeframe="60">1H</button>
           <button class="btn active" data-timeframe="240">4H</button>
           <button class="btn active" data-timeframe="D">1D</button>
-          <button class="btn active" data-timeframe="W">1W</button>
+          <button class="btn" data-timeframe="W">1W</button>
           <button class="btn" data-timeframe="M">1M</button>
           <button class="btn" data-timeframe="3M">3M</button>
         </div>
@@ -430,10 +436,10 @@ select:focus { border-color: #00d4aa; }
 
 </div><!-- /.main-container -->
 
-<!-- Webamp renders here — bottom-left -->
+<!-- Webamp renders here — right-center -->
 <div id="webamp-app"></div>
 
-<!-- IA Search Panel — bottom-left, above Webamp -->
+<!-- IA Search Panel -->
 <div id="ia-panel">
   <div id="ia-search-box">
     <h3>🎵 Internet Archive Search</h3>
@@ -628,17 +634,26 @@ function initWebamp() {
       },
       butterchurnOpen: true,
     },
-    __initialWindowLayout: {
-      main:      { position: { x: 16, y: 50 } },
-      equalizer: { position: { x: 16, y: 166 } },
-      playlist:  { position: { x: 16, y: 282 }, size: [0, 4] },
-      milkdrop:  { position: { x: 0,  y: 0  }, size: [0, 0] },
-    },
+    __initialWindowLayout: (() => {
+      const W      = 275;
+      const milkW  = 275;
+      const milkH  = 200;   // visualizer height
+      const mainH  = 116;
+      const eqH    = 116;
+      const plH    = 116;
+      const stackH = milkH + mainH + eqH + plH;
+      const x      = window.innerWidth - W;
+      const y      = Math.max(64, Math.round((window.innerHeight - stackH) / 2));
+      return {
+        milkdrop:  { position: { x, y                          }, size: [milkW - 275, milkH - 116] },
+        main:      { position: { x, y: y + milkH               } },
+        equalizer: { position: { x, y: y + milkH + mainH       } },
+        playlist:  { position: { x, y: y + milkH + mainH + eqH }, size: [0, 4] },
+      };
+    })(),
   });
 
-  webamp.renderWhenReady(document.getElementById('webamp-app')).then(() => {
-    webamp.setMilkdropFullscreen(true);
-  });
+  webamp.renderWhenReady(document.getElementById('webamp-app'));
 
   webamp.onTrackDidChange(track => {
     if (track?.metaData?.title) {
